@@ -2,9 +2,9 @@ clc;
 close all;
 
 % design params
-a = 0.3362; % default = 0.6
-r = 0.9355; % by trial and error
-r2 = 0.7448;
+a = 0.6; % default = 0.6
+r = 0.885; % by trial and error
+r2 = r;
 
 fs = 1024;
 w= linspace(-pi,pi,fs);
@@ -161,3 +161,36 @@ function impulse_response(num, den)
     xlabel('Time (sec)')
     ylabel('Impulse Response')
 end
+
+%% The "Find the Sweet Spot" Sweep
+figure;
+hold on;
+a_test_values = [0.1, 0.4, 0.6, 0.75, 0.9]; % Sweeping different values of 'a'
+colors = ['r', 'g', 'b', 'm', 'k'];
+
+for i = 1:length(a_test_values)
+    p1_test = a_test_values(i);
+    
+    % Recalculate only the parts affected by p1
+    den1_test = [1 -p1_test];
+    h1_test = tf(num1, den1_test, 1/fs);
+    
+    % Recombine the whole 5th order filter
+    H_test = h1_test * h2 * h3 * h4 * h5; 
+    [num_t, den_t] = tfdata(H_test, 'v');
+    h_t = freqz(num_t, den_t, w);
+    
+    % Normalize and plot
+    mag_norm = 20*log10(abs(h_t) / max(abs(h_t)));
+    plot(w, mag_norm, colors(i), 'LineWidth', 1.5, 'DisplayName', ['a = ' num2str(p1_test)]);
+end
+
+xlim([-wp wp]);
+ylim([-2 0.5]); % Zoom in right on the ripple boundary
+yline(-0.5, '--k', 'LineWidth', 2, 'DisplayName', '-0.5 dB Limit');
+legend('show', 'Location', 'south');
+title('Sweeping pole p1 (a) to find < 0.5 dB ripple');
+xlabel('Normalized Frequency (rad/sec)');
+ylabel('Normalized Magnitude Response (dB)');
+grid on;
+hold off;
