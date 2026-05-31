@@ -46,7 +46,7 @@ p_fifth = [a, p2, p3, p4, p5];
 n = length(p_fifth);
 
 type = "fifth order LPF";
-% filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
+filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
 
 %% rotation
 %% HP filter (muliply by j^2 = -1)
