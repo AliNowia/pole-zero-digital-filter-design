@@ -1,5 +1,5 @@
 clc;
-clear all;
+clear;
 close all;
 
 %% design params
@@ -46,7 +46,7 @@ p_fifth = [a, p2, p3, p4, p5];
 n = length(p_fifth);
 
 type = "fifth order LPF";
-filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
+%filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
 
 %% rotation
 %% HP filter (muliply by j^2 = -1)
@@ -63,12 +63,12 @@ p_BPF = [-1j*a, -1j*p2, -1j*p3, -1j*p4, -1j*p5];
 n = length(p_BPF);
 
 type = "fifth order BPF";
-% filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
+ filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
 
 %% the zero, pole plot
 function pole_zero(num, den, type)
     zplane (num,den);
-    title(sprintf('Pole-Zero Plot of %s'), type, "FontWeight", "bold")
+    title(sprintf("Pole-Zero Plot of %s", type), "FontWeight", "bold")
 end
 
 %% magnitude response
