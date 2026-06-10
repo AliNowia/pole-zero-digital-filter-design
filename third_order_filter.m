@@ -3,7 +3,7 @@ clear;
 close all;
 
 %% design params
-a = 0; % default = 0.6
+a = 0.1; % default = 0.6
 r_third = 0.9; % by trial and error
 r_fifth = 0.39;
 
@@ -32,7 +32,7 @@ p_third = [a, p2, p3];
 n = length(p_third);
 
 type = "third order LPF";
-% filter_plots(z_third, p_third, n, w, wp, ws, fs, type);
+%filter_plots(z_third, p_third, n, w, wp, ws, fs, type);
 
 %% Fifth Order Filter
 
@@ -47,6 +47,32 @@ n = length(p_fifth);
 
 type = "fifth order LPF";
 %filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
+
+%% Comb filter testing
+
+L = 8;
+
+% Initialize as empty arrays so we don't keep the original roots
+z_comp = []; 
+p_comp = [];
+
+for i = 0 : L-1
+    % 1. Corrected Magnitude: Added parentheses around (1/L)
+    new_mag_z = abs(z_fifth) .^ (1/L);
+    new_mag_p = abs(p_fifth) .^ (1/L);
+    
+    % 2. Corrected Phase: Divided the original angle by L
+    new_phase_z = (angle(z_fifth) + 2*pi*i) / L;
+    new_phase_p = (angle(p_fifth) + 2*pi*i) / L;
+    
+    % 3. Append the new roots for this iteration
+    z_comp = [z_comp, new_mag_z .* exp(1j * new_phase_z)];
+    p_comp = [p_comp, new_mag_p .* exp(1j * new_phase_p)];
+end
+n = length(p_comp);
+
+type = "Comb Filter";
+filter_plots(z_comp, p_comp, n, w, wp, ws, fs, type);
 
 %% rotation
 %% HP filter (muliply by j^2 = -1)
@@ -63,7 +89,7 @@ p_BPF = [-1j*a, -1j*p2, -1j*p3, -1j*p4, -1j*p5];
 n = length(p_BPF);
 
 type = "fifth order BPF";
- filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
+ %filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
 
 %% the zero, pole plot
 function pole_zero(num, den, type)
