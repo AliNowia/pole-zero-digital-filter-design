@@ -3,9 +3,9 @@ clear;
 close all;
 
 %% design params
-a = 0.1; % default = 0.6
-r_third = 0.9; % by trial and error
-r_fifth = 0.39;
+a = 0.4; % default = 0.6
+r_third = 0.86; % by trial and error
+r_fifth = 0.2;
 
 fs = 1024;
 w= linspace(-pi,pi,fs);
@@ -13,9 +13,9 @@ w= linspace(-pi,pi,fs);
 %% First Order filter
 
 z_First = 0;
-p_First = 0.6;
-type = "first order LPF";
-% filter_plots(z_First, p_First, 1, w, pi, pi, fs, type);
+p_First = a;
+type = "first order HPF";
+%filter_plots(z_First, p_First, 1, w, pi, pi, fs, type);
 
 %% Third Order Filter
 ws = (0.25+0.1/2)*pi;
@@ -46,7 +46,7 @@ p_fifth = [a, p2, p3, p4, p5];
 n = length(p_fifth);
 
 type = "fifth order LPF";
-%filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
+filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
 
 %% Comb filter testing
 
@@ -58,12 +58,12 @@ p_comp = [];
 
 for i = 0 : L-1
     % 1. Corrected Magnitude: Added parentheses around (1/L)
-    new_mag_z = abs(z_fifth) .^ (1/L);
-    new_mag_p = abs(p_fifth) .^ (1/L);
+    new_mag_z = abs(z_third) .^ (1/L);
+    new_mag_p = abs(p_third) .^ (1/L);
     
     % 2. Corrected Phase: Divided the original angle by L
-    new_phase_z = (angle(z_fifth) + 2*pi*i) / L;
-    new_phase_p = (angle(p_fifth) + 2*pi*i) / L;
+    new_phase_z = (angle(z_third) + 2*pi*i) / L;
+    new_phase_p = (angle(p_third) + 2*pi*i) / L;
     
     % 3. Append the new roots for this iteration
     z_comp = [z_comp, new_mag_z .* exp(1j * new_phase_z)];
@@ -81,7 +81,7 @@ p_HPF = [-a, -p2, -p3, -p4, -p5];
 n = length(p_HPF);
 
 type = "fifth order HPF";
-% filter_plots(z_HPF, p_HPF, n, w, pi, pi, fs, type);
+%filter_plots(z_HPF, p_HPF, n, w, pi, pi, fs, type);
 
 %% BP filter (multiply by -j)
 z_BPF = [0, -1j*z1, -1j*z2, -1j*z3, -1j*z4];
@@ -89,7 +89,7 @@ p_BPF = [-1j*a, -1j*p2, -1j*p3, -1j*p4, -1j*p5];
 n = length(p_BPF);
 
 type = "fifth order BPF";
- %filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
+%filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
 
 %% the zero, pole plot
 function pole_zero(num, den, type)
@@ -106,7 +106,7 @@ function magnitude_response(h, w, wp1, ws1, type)
     xlim([-pi pi]);
     title('from -\pi to \pi', "FontWeight", "bold")
     xlabel('Normalized Frequency (rad/sec)')
-    ylabel('Normalized Magnitude Response')
+    ylabel('Normalized Magnitude Response (dB)')
     xline([0]);
     xline([wp1, ws1, -wp1, -ws1], 'Color', 'r')
     legend('|H(jw)|', 'transition band')
@@ -137,7 +137,7 @@ function magnitude_response(h, w, wp1, ws1, type)
     xlim([-wp1 wp1]);
     xline([0]);
     xline([wp1, -wp1], 'Color', 'r')
-    title(sprintf('from -wp to wp\nmaximum passband ripple = %.4f', maximum))
+    title(sprintf('from -wp to wp'))
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Normalized Magnitude Response')
 
@@ -153,14 +153,13 @@ function phase_response(h, w, wp1, type)
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Phase Response')
     
-    
     subplot(1,2,2);
     plot(w/pi,phase);
     xlim([-wp1 wp1]);
     title('from -wp to wp')
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Phase Response')
-    
+
     sgtitle(sprintf('Phase response of %s', type), "FontWeight", "bold")
 end
 
@@ -216,3 +215,77 @@ function filter_plots(z, p, n, w, wp, ws, fs, type)
     figure;
     impulse_response(num_filter, den_filter, type);
 end
+
+
+function [a1, r11, r22] = find_params(w, fs, wp, ws)
+    a = linspace(0.3, 0.9, 30);
+    r1 = linspace(0.3, 0.9, 30);
+    r2 = linspace(0.3, 0.9, 30);
+    
+    a1 = 0; r11 = 0; r22 = 0;
+    
+    z1 = exp(1j*ws);
+    z2 = exp(-1j*ws);
+    z3 = exp(1j * (pi+ws)/2);
+    z4 = exp(-1j * (pi+ws)/2);
+    
+    z_fifth = [0, z1, z2, z3, z4]; 
+    
+    num_coeffs = poly(z_fifth); 
+    
+    total_iterations = length(a) * length(r1) * length(r2);
+
+    avos = zeros(1, total_iterations);
+    avms = zeros(1, total_iterations);
+    c = 1;
+        
+    fprintf("Beginning iteration...\n");
+    
+    for i = 1:length(a)
+        p1 = a(i);
+        for j = 1:length(r1)
+            p2 = r1(j)*exp(1j*wp);
+            p3 = r1(j)*exp(-1j*wp);
+            for k = 1:length(r2)
+                p4 = r2(k)*exp(1j * wp/2);
+                p5 = r2(k)*exp(-1j * wp/2);
+                
+                p_fifth = [p1, p2, p3, p4, p5];
+                
+                den_coeffs = poly(p_fifth); 
+                
+                h_o = freqz(num_coeffs, den_coeffs, w(415:620));
+                
+                h_o_db = 20*log10(abs(h_o) / max(abs(h_o)));
+                
+                avo = max(h_o_db); % This will always be 0
+                avm = min(h_o_db); % This will be the deepest negative dip
+                
+                avos(c) = avo;
+                avms(c) = avm;
+                
+                fprintf("Iteration: %d | Avo = %.2f | Avm = %.2f\n", c, avo, avm);
+                c = c + 1;
+                 
+                if abs(avo - avm) <= 2
+                    a1 = a(i);
+                    r11 = r1(j);
+                    r22 = r2(k);
+                    fprintf("Match found! Your values: [%.2f, %.2f, %.2f]\n", a1, r11, r22);
+                    return;
+                end
+            end
+        end
+    end
+    
+    fprintf("Sorry, couldn't find satisfying values for the ripple constraint.\n");
+    
+    figure;
+    plot(1:total_iterations, abs(avos - avms));
+    title('Ripple vs Iteration');
+    xlabel('Iteration');
+    ylabel('Ripple (dB)');
+end
+
+
+[a_1, r__1, r__2] = find_params(w, fs, wp, ws);
