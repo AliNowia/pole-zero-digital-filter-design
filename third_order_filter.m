@@ -3,8 +3,8 @@ clear;
 close all;
 
 %% design params
-a = 0.4; % default = 0.6
-r_third = 0.86; % by trial and error
+a = 0.4; % default = 0.6 | best = 0.4
+r_third = 0.86; % 0.885 for 3rd | 0.86 for fifth
 r_fifth = 0.2;
 
 fs = 1024;
@@ -46,7 +46,7 @@ p_fifth = [a, p2, p3, p4, p5];
 n = length(p_fifth);
 
 type = "fifth order LPF";
-filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
+%filter_plots(z_fifth, p_fifth, n, w, wp, ws, fs, type);
 
 %% Comb filter testing
 
@@ -81,15 +81,14 @@ p_HPF = [-a, -p2, -p3, -p4, -p5];
 n = length(p_HPF);
 
 type = "fifth order HPF";
-%filter_plots(z_HPF, p_HPF, n, w, pi, pi, fs, type);
+%filter_plots(z_HPF, p_HPF, n, w, wp+pi/2, pi, fs, type);
 
 %% BP filter (multiply by -j)
-z_BPF = [0, -1j*z1, -1j*z2, -1j*z3, -1j*z4];
-p_BPF = [-1j*a, -1j*p2, -1j*p3, -1j*p4, -1j*p5];
+z_BPF = [1j*z_fifth, -1j*z_fifth];
+p_BPF = [1j*p_fifth, -1j*p_fifth];
 n = length(p_BPF);
-
-type = "fifth order BPF";
-%filter_plots(z_BPF, p_BPF, n, w, pi, pi, fs, type);
+type = "tenth order BPF";
+filter_plots(z_BPF, p_BPF, n, w, wp+pi/2, pi, fs, type);
 
 %% the zero, pole plot
 function pole_zero(num, den, type)
@@ -107,8 +106,8 @@ function magnitude_response(h, w, wp1, ws1, type)
     title('from -\pi to \pi', "FontWeight", "bold")
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Normalized Magnitude Response (dB)')
-    xline([0]);
-    xline([wp1, ws1, -wp1, -ws1], 'Color', 'r')
+    %xline([0]);
+    %xline([wp1, ws1, -wp1, -ws1], 'Color', 'r')
     legend('|H(jw)|', 'transition band')
     
     % to get max magnitude ripple
@@ -134,9 +133,9 @@ function magnitude_response(h, w, wp1, ws1, type)
 
     subplot(1,2,2);
     plot(w,20*log10(abs(h) / max(abs(h))));
-    xlim([-wp1 wp1]);
-    xline([0]);
-    xline([wp1, -wp1], 'Color', 'r')
+    xlim([-2.51 -0.63]);
+    %xline([0]);
+    %xline([wp1, -wp1], 'Color', 'r')
     title(sprintf('from -wp to wp'))
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Normalized Magnitude Response')
@@ -155,7 +154,7 @@ function phase_response(h, w, wp1, type)
     
     subplot(1,2,2);
     plot(w/pi,phase);
-    xlim([-wp1 wp1]);
+    xlim([-2.51 -0.63]/pi);
     title('from -wp to wp')
     xlabel('Normalized Frequency (rad/sec)')
     ylabel('Phase Response')
